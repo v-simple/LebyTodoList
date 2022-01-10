@@ -1,51 +1,115 @@
-const input = document.getElementById('input');
-const addbtn = document.getElementById('addbtn');
-const div = document.getElementById('list')
+let saveTodoItems = getLocalStorage();
 
-//엔터로 입력시 ?????   그리고 input 입력시 비어있을때 입력 안되게 하기???
-input.addEventListener('keyup', (e) => {
-  if(e.keyCode === 13){
-    addList()
-  }
+const todoInput = document.getElementById('todoInput')
+const todoItems = document.getElementById('todoItems');
+const todoCount = document.getElementById('todoCount');
+
+reloadTodoItems();
+
+
+console.log(todoInput.value);
+
+// 엔터키 입력 시
+todoInput.addEventListener('keyup', function(e) {
+	if (e.key === 'Enter' || e.keyCode === 13) {
+		const inputValue = todoInput.value.trim()
+		if (todoInput.value.trim() === '') {
+			alert('값을 입력하세요.');
+			todoInput.value = '';
+			return;
+		}
+
+		// 추가
+		addTodoItem(inputValue);
+		removeAddEvent();
+		checkAddEvent();
+		todoInput.value = '';
+	}
 })
 
-addbtn.addEventListener('click', () => {
-  addList()
-})
 
-function addList() {
-  if (input.value === '') return
-  
-  const List = document.createElement('div')
+function addTodoItem(value) {
+	let todoItem = {}
+	todoItem.text = value;
+	todoItem.toggle = false;
+	saveTodoItems.push(todoItem);
+	setTodoIndex();
+	addTodoItemTemplate(todoItem);
+	setLcoalStorage();
+}
 
-  const Input = document.createElement('input')
+function addTodoItemTemplate(todoItem) {
+	// mdi-check-circle
+	// mdi-checkbox-blank-circle-outline (default)
+	let template = `
+		<div class="row">
+			<div class="col-2">
+				<button class="check-button btn btn-lg" data-index="${todoItem.index}">
+	`
+	if (todoItem.toggle) {
+		template += `<i class="mdi mdi-check-circle"></i>`
+	} else {
+		template += `<i class="mdi mdi-checkbox-blank-circle-outline"></i>`
+	}
+	template += `</button>
+			</div>
+			<div class="col justify-content-center align-self-center">
+				<span class="ms-1">${todoItem.text}</span>
+			</div>
+			<div class="col-2">
+				<button class="remove-button btn btn-lg" data-index="${todoItem.index}">
+					<i class="mdi mdi-window-close"></i>
+				</button>
+			</div>
+		</div>
+	`
+	todoItems.innerHTML += template;
+}
 
-  const Label = document.createElement('label')
-  Label.innerText = input.value
-  Label.style.marginLeft = '10px'
+function setTodoIndex() {
+	saveTodoItems.map((todoItem, index) => {
+		todoItem.index = index;
+	});
+	todoCount.innerHTML = saveTodoItems.length == 0 ? '' : saveTodoItems.length;
+}
 
-  Input.type = 'checkbox'
-  Input.addEventListener('change', (e) => {
-      if (Input.checked) {
-      Label.style.textDecoration = 'line-through'
-      } else {
-      Label.style.textDecoration = 'none'
-      }
-  })
+function removeAddEvent() {
+	const removeButtons = document.getElementsByClassName('remove-button')
+	for (let removeButton of removeButtons) {
+		removeButton.addEventListener('click', function() {
+			saveTodoItems.splice(Number(this.dataset.index), 1);
+			reloadTodoItems();
+		});
+	}
+}
 
-  //리스트 삭제
-  const DeleteButton =  document.createElement('button')
-  DeleteButton.textContent = '제거하기'
-  DeleteButton.style.marginLeft = '10px'
-  DeleteButton.addEventListener('click', () => {
-      List.parentNode.removeChild(List)
-  })
+function checkAddEvent() {
+	const checkButtons = document.getElementsByClassName('check-button')
+	for (let checkButton of checkButtons) {
+		checkButton.addEventListener('click', function() {
+			let todoItem = saveTodoItems[Number(this.dataset.index)];
+			todoItem.toggle = !todoItem.toggle;
+			reloadTodoItems();
+		});
+	}
+}
 
-  List.appendChild(Input)
-  List.appendChild(Label)
-  List.appendChild(DeleteButton)
+function reloadTodoItems() {
+	todoItems.innerHTML = '';
+	todoCount.innerHTML = '';
+	setTodoIndex();
+	for (let todoItem of saveTodoItems) {
+		addTodoItemTemplate(todoItem);
+	}
+	removeAddEvent();
+	checkAddEvent();
+	setLcoalStorage();
+}
 
-  div.appendChild(List)
-  //input 다시 공백으로
-  input.value = ''
+function setLcoalStorage() {
+	window.localStorage.setItem('todoItems', JSON.stringify(saveTodoItems));
+}
+
+function getLocalStorage() {
+	return (window.localStorage.getItem('todoItems') == null) ? [] : JSON.parse(window.localStorage.getItem('todoItems'))
 }
